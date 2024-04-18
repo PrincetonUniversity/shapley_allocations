@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shapley_allocations"
+description = "TODO: ADD HERE"
+version = "1.0.0"
+
+dependencies = ["numpy", "pandas", "scipy"]
+requires-python = ">=3.9"
+
+authors = [
+    { name="Amit Solomon", email="as3993@princeton.edu" },
+    { name="Felix Ackon", email="fackon@princeton.edu" },
+]
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pre-commit",
+    "ruff",
+    "ruff-lsp",
+    "ipython",
+    "matplotlib",
+    "jupyterlab",
+    "ipdb",
+    "marimo",
+]
+
+[tool.ruff]
+exclude = [
+    "*.csv",
+    "*__init__.py",
+]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
