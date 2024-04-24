@@ -133,13 +133,13 @@ def shap_helper(i: int,n: int) -> np.ndarray:
 
 #Define the shapley allocation for agent i
 def shap_alloc_helper(i: int, n: int) -> np.ndarray:
-    """Given the player i allocation who we want to compute and the number of players in the game, 
+    """Given a player i whose allocation we want to compute, and the number of players in the game, 
     compute the shapley allocation for that player
     
     Parameters
     -----------
-    i: int
-        the player i that we want to compute the allocation for
+    i: int (between 1 and n)
+        the player i that we want to compute the allocation for 
     n: int
         the number of players in the coop game
 
@@ -224,3 +224,13 @@ def to_bool_list(x):
 #TODO: Is this function used anywhere?
 def flatten(xss):
     return [x for xs in xss for x in xs]
+
+def ceildiv(a, b):
+    return -(a // -b)
+
+
+def divide_chunks(l, n):       
+    # looping till length l 
+    for i in range(0, len(l), n):  
+        yield l[i:i + n] 
+  
