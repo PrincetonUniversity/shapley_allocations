@@ -3,3 +3,7 @@ __scrap__/
 .DS_Store
 .vscode/
 2018-08-01/
+Pipfile
+Pipfile.lock
+shapley_allocations.egg-info/
+cohort.txt
