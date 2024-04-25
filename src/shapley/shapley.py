@@ -191,10 +191,10 @@ def shap_alloc(num_scen: int, alpha: float, num_cohorts: int, scen_df: object):
 
     #Compute the 95th percentile for each hour accross all scenarious in the BAU case
     scen_df["VaR"] = scen_df[char_order(num_cohorts)[0]].groupby(level = "Hour").transform("quantile",
-                                                                                 quantile)
+                                                                                 quantile, interpolation = "lower")
 
     #Create a column that indicates if in the tail
-    scen_df["inTail"] = scen_df[char_order(num_cohorts)[0]] >= scen_df["VaR"]
+    scen_df["inTail"] = scen_df[char_order(num_cohorts)[0]] > scen_df["VaR"]
 
     result_df = round(scen_df.loc[scen_df["inTail"], ["aloc" + str(i+1) for i in range(num_cohorts)] + [char_order(num_cohorts)[0]]]\
                 .groupby(level = "Hour").sum() / (num_scen * alpha),2)

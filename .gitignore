@@ -7,3 +7,4 @@ Pipfile
 Pipfile.lock
 shapley_allocations.egg-info/
 cohort.txt
+results.csv

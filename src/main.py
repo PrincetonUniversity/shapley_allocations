@@ -1,6 +1,10 @@
 import argparse
+from datetime import timedelta
+import time
 
 from shapley.shapley import gen_cohorts, shap_alloc
+#Start the timer
+starttime = time.perf_counter()
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
@@ -32,3 +36,6 @@ if __name__=="__main__":
     scen_df = gen_cohorts(num_scen, num_cohorts, folder_path, area_fname)
     result = shap_alloc(num_scen, alpha, num_cohorts, scen_df)
     result.to_csv(output_file)
+
+duration = timedelta(seconds=time.perf_counter()-starttime)
+print('Job took: ', duration)

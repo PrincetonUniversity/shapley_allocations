@@ -100,7 +100,9 @@ def rec_coef(n: int) -> np.ndarray:
         a matrix of dimention 2^n x 1. It represents eta_k in page 5
     """
     #Initialize then apply recursion
-    if n == 1:
+    if n == 0:
+        return (np.array([0]))
+    elif n == 1:
         return (np.array([1, 0]))
     else:
         return(np.append(rec_coef(n-1) + np.ones(2 ** (n-1), dtype = int),
