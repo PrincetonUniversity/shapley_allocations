@@ -84,10 +84,10 @@ def rec_stp(x: np.ndarray, n: int):
         #Else recursively multiple
         return(stp(x[:,0], rec_stp(x[:,1:], n-1)))
 
-#Define the l vectorthat holds the counting coef
 def rec_coef(n: int) -> np.ndarray:
     """Given the number of players in the game, identify the vector that holds all the counting
     coeficients in the shapley value computation.
+    The computation is executed with dynamic programming (more efficient than recursion).
     
     Parameters
     -----------
@@ -99,14 +99,10 @@ def rec_coef(n: int) -> np.ndarray:
     matrix
         a matrix of dimention 2^n x 1. It represents eta_k in page 5
     """
-    #Initialize then apply recursion
-    if n == 0:
-        return (np.array([0]))
-    elif n == 1:
-        return (np.array([1, 0]))
-    else:
-        return(np.append(rec_coef(n-1) + np.ones(2 ** (n-1), dtype = int),
-                         rec_coef(n-1)))
+    curr_res = np.array([0])
+    for curr_n in range(1, n+1):
+        curr_res = np.append(curr_res + np.ones(2**(curr_n-1), dtype=int), curr_res)
+    return curr_res
 
 #Define the matrix T_i
 def shap_helper(i: int,n: int) -> np.ndarray:

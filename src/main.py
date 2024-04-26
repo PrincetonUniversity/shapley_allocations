@@ -33,7 +33,7 @@ if __name__=="__main__":
 
     num_cohorts = args.num_cohorts
 
-    scen_df = gen_cohorts(num_scen, num_cohorts, folder_path, area_fname)
+    scen_df = gen_cohorts(num_cohorts, folder_path, area_fname)
     result = shap_alloc(num_scen, alpha, num_cohorts, scen_df)
     result.to_csv(output_file)
 
