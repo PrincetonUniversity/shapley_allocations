@@ -45,39 +45,11 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
     #iterate over directory and store filenames in a list
     #Only keep the csv files and put file names in a list
     files_list = list(filter(lambda f: f.name.endswith('.csv'), folder_path.iterdir()))
-
-    #Create a df to hold the total emissions for each hour and scenario
-    full_em_df = pd.DataFrame()
     
-    #Loop through all the csv files
-    for i in range(len(files_list)):
-        #For each scenario file, open and read it into a temporary df. Then append it to the 
-        #previous data frame
-        temp_df = pd.read_table(files_list[i], sep = ",",
-                         header = 0, index_col = False,
-                          usecols = ["Date", "Hour", "Generator", "CO2 Emissions metric ton", 
-                                     "Dispatch"])
-        #label the scenario number to keep track
-        temp_df["Scenario"] = files_list[i].name[5:9]
-        full_em_df =  pd.concat([full_em_df, temp_df], ignore_index = True, sort=False)
-    
-    #Create new column with generator type
-    full_em_df["Type"] = full_em_df["Generator"].apply(lambda x: gen_type(x))
-    
-    del temp_df
-
     #Open up the areas file 
     #import the data
     gen_zone_df = pd.read_table(area_fname, sep = ",",
                          header = 0, index_col = False)
-    #Merge the two data sets
-    full_em_df = full_em_df.merge(gen_zone_df, how = "left",
-                                  left_on = "Generator", right_on = "GEN UID", copy = False)
-
-    #Sort the dataframe by area
-    #full_em_df['Area'] = full_em_df['Area'].astype('str') 
-    full_em_df.sort_values(by = ["Area"], axis = 0,inplace= True)
-    
     #use the areas file to determine the number of generators
     num_gen = len(gen_zone_df.index)
 
@@ -86,56 +58,57 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
     #of cohorts. Have to round up
     cohort_size = ceildiv(num_gen, num_cohorts)
 
+    #Which column are we using to determine the cohorts
+    category = "Generator"
     #Create the cohorts
     cohort = list(divide_chunks(gen_zone_df["GEN UID"].values, cohort_size))
     del gen_zone_df
 
-    #Create a new vector holding the characteristic function matrix
-    char_df = pd.DataFrame({"Hour": full_em_df["Hour"], "Type": full_em_df["Type"], 
-                            "Generator": full_em_df["Generator"],
-                            "Area": full_em_df["Area"], "Scenario": full_em_df["Scenario"]})
-    #Which column are we using to determine the cohorts
-    category = "Generator"
-    #Create the matrix of repeated C02 emissions metric ton
-    emission_mat = np.tile(full_em_df["CO2 Emissions metric ton"].values,(2**num_cohorts,1))
-    #Create the matrix of repeated dispatch
-    dispatch_mat = np.tile(full_em_df["Dispatch"].values,(2**num_cohorts,1))
-    #Merge these two together
-    temp_mat = np.concatenate((emission_mat, dispatch_mat), axis = 0)
-    
-    #Check to make sure the merge happened correctly
-    del emission_mat, dispatch_mat
-    
-    #Convert into  dataframe
-    temp_df = pd.DataFrame(data = np.transpose(temp_mat),
-                           columns = [i + "e" for i in char_order(num_cohorts)] + 
-                           [i + "d" for i in char_order(num_cohorts)], 
-                           index = range(len(full_em_df["CO2 Emissions metric ton"].values)))
-    
-    #Merge the two data frames togetjer
-    char_df = pd.concat([char_df, temp_df], axis = 1)
-    del temp_df
-    
-    #Plug in the 0s for idealized cases
-    #skip the first one which is the BAU case
-    for i in char_order(num_cohorts)[1:]:
-        #Change the value of the new emission column and dispatch column to 0
-        char_df.loc[char_df[category].isin(flatten(list(compress(cohort,to_bool_list(i))))),
-                    [i + "e", i + "d"]] = 0
-    #Convert the last column back into t
+    #Create a list containing the 2^n binary representation of cohorts
+    #where a 1 indicates that cohort 1 is included
+    char_labels = char_order(num_cohorts)
+
+    #Create a list to hold all the allocations for the 24 hours
+    temp = []
+    #Loop through all the csv files
+    for f in range(len(files_list)):
+        #For each scenario file, open and read it into a df
+        em_df = pd.read_table(files_list[f], sep = ",",
+                         header = 0, index_col = False,
+                          usecols = ["Date", "Hour", "Generator", "CO2 Emissions metric ton", 
+                                     "Dispatch"])
+        #label the scenario number to keep track
+        scen_num = files_list[f].name[5:9]
+        #full_em_df =  pd.concat([full_em_df, temp_df], ignore_index = True, sort=False)
+        #Create new column with generator type
+        em_df["Type"] = em_df["Generator"].apply(lambda x: gen_type(x))
+        
+        #Then loop across hours
+        for h in range(24):
+            #Create a vector that holds the total emissions for each cohort
+            cohort_em = np.zeros(num_cohorts)
+            #Create a vector that holds the total output for each cohort
+            cohort_dispatch = np.zeros(num_cohorts)
+            for i in range(num_cohorts):
+                cohort_em[i], cohort_dispatch[i] = em_df.loc[(em_df[category].isin(cohort[i])) & (em_df["Hour"] == h),
+                                                            ["CO2 Emissions metric ton", "Dispatch"]].sum(axis = 0).values
+            
+            #Create a vector of size 2^n that holds the allocation of efficient
+            char_values = np.zeros(2**num_cohorts)
+            
+            for i in range(2**num_cohorts):
+                char_values[i] = np.sum(np.divide(cohort_em[to_bool_list(char_labels[i])],
+                                                cohort_dispatch[to_bool_list(char_labels[i])]))
+            temp.append([scen_num, h] + char_values.tolist())
+
+    #Create a df to store all the scenarios allocation values
+    full_em_df = pd.DataFrame(data = temp, 
+                                columns = ["Scenario", "Hour"]  + char_labels)
 
     #Aggregate the data to scenario level to get the contribution values by scenario
     #Group the data frame by scenario and hour. The aggregation only requires summing
     #the allocations and the total emissions
-    scen_df = char_df.drop(["Type", "Area", "Generator"],
-                           axis = 1).groupby(["Scenario", "Hour"]).sum()
-    #Convert the last column back into nonzeros so we dont divide by 0
-    scen_df[char_order(num_cohorts)[-1] + "d"] = scen_df[char_order(num_cohorts)[0] + "d"]
-    
-    #Compute the actual payoff value
-    scen_df = scen_df.iloc[:,0:(2**num_cohorts)]/ scen_df.iloc[:,(2**num_cohorts):(2**(num_cohorts+1))].values
-    #Rename columns
-    scen_df.columns = char_order(num_cohorts)
+    scen_df = full_em_df.groupby(["Scenario", "Hour"]).sum()
     #Change all nonporucing assets from Nan to zeros
     scen_df = scen_df.fillna(0)
 
