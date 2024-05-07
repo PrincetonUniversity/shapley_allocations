@@ -71,7 +71,8 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
     #Create a list to hold all the allocations for the 24 hours
     temp = []
     #Loop through all the csv files
-    for f in range(len(files_list)):
+    #for f in range(len(files_list)):
+    for f in range(2):
         #For each scenario file, open and read it into a df
         em_df = pd.read_table(files_list[f], sep = ",",
                          header = 0, index_col = False,
@@ -105,17 +106,14 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
     full_em_df = pd.DataFrame(data = temp, 
                                 columns = ["Scenario", "Hour"]  + char_labels)
 
-    #Aggregate the data to scenario level to get the contribution values by scenario
-    #Group the data frame by scenario and hour. The aggregation only requires summing
-    #the allocations and the total emissions
-    scen_df = full_em_df.groupby(["Scenario", "Hour"]).sum()
+    full_em_df.set_index(["Scenario", "Hour"], inplace = True)
     #Change all nonporucing assets from Nan to zeros
-    scen_df = scen_df.fillna(0)
-
+    full_em_df = full_em_df.fillna(0)
+ 
     #Save the cohorts as a text file
     with open("cohort.txt", "w") as output:
         output.write(str(cohort))
-    return(scen_df)
+    return(full_em_df)
 
 #################################
 #ANALAYSIS - STAYS THE SAME FOR ALL INPUTS
