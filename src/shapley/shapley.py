@@ -71,8 +71,7 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
     #Create a list to hold all the allocations for the 24 hours
     temp = []
     #Loop through all the csv files
-    #for f in range(len(files_list)):
-    for f in range(2):
+    for f in range(len(files_list)):
         #For each scenario file, open and read it into a df
         em_df = pd.read_table(files_list[f], sep = ",",
                          header = 0, index_col = False,
@@ -97,9 +96,9 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
             #Create a vector of size 2^n that holds the allocation of efficient
             char_values = np.zeros(2**num_cohorts)
             
-            for i in range(2**num_cohorts):
-                char_values[i] = np.sum(np.divide(cohort_em[to_bool_list(char_labels[i])],
-                                                cohort_dispatch[to_bool_list(char_labels[i])]))
+            for i in range((2**num_cohorts) - 1):
+                char_values[i] = np.divide(np.sum(cohort_em[to_bool_list(char_labels[i])]),
+                                                np.sum(cohort_dispatch[to_bool_list(char_labels[i])]))
             temp.append([scen_num, h] + char_values.tolist())
 
     #Create a df to store all the scenarios allocation values
@@ -155,7 +154,7 @@ def shap_alloc(num_scen: int, alpha: float, num_cohorts: int, scen_df: object):
                                             np.transpose(temp_mat)), 
                            columns = ["aloc" + str(i +1) for i in range(num_cohorts)], 
                            index = scen_df.index),
-                         scen_df], axis =1 )
+                         scen_df[char_order(num_cohorts)[0]]], axis =1 )
 
     #Compute the 95th percentile for each hour accross all scenarious in the BAU case
     scen_df["VaR"] = scen_df[char_order(num_cohorts)[0]].groupby(level = "Hour").transform("quantile",

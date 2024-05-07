@@ -216,7 +216,7 @@ def to_bool_list(x):
     list = []
     #Takes a string binary
     for i in x:
-        list.append(bool(1-int(i)))
+        list.append(bool(int(i)))
     return(list)
 
 #TODO: Is this function used anywhere?
