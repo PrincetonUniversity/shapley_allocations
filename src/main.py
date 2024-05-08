@@ -1,8 +1,9 @@
 import argparse
-from datetime import timedelta
 import time
+from datetime import timedelta
 
 from shapley.shapley import gen_cohorts, shap_alloc
+
 #Start the timer
 starttime = time.perf_counter()
 

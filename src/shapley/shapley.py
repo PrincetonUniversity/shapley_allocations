@@ -1,16 +1,18 @@
-from itertools import compress
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-# from utils import gen_type, shap_alloc_helper, char_order, to_bool_list
-from utils.utils import char_order, gen_type, shap_alloc_helper, to_bool_list, \
-    ceildiv, divide_chunks, flatten
-
+from utils.utils import (
+    ceildiv,
+    char_order,
+    divide_chunks,
+    gen_type,
+    shap_alloc_helper,
+    to_bool_list,
+)
 
 #################################
-    #PREPROCESSING: TAILORED FOR THE SPECIFIC INPUT
+#PREPROCESSING: TAILORED FOR THE SPECIFIC INPUT
 #################################
 
 def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
@@ -48,8 +50,7 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
     
     #Open up the areas file 
     #import the data
-    gen_zone_df = pd.read_table(area_fname, sep = ",",
-                         header = 0, index_col = False)
+    gen_zone_df = pd.read_table(area_fname, sep = ",", header = 0, index_col = False)
     #use the areas file to determine the number of generators
     num_gen = len(gen_zone_df.index)
 
@@ -60,6 +61,7 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
 
     #Which column are we using to determine the cohorts
     category = "Generator"
+    
     #Create the cohorts
     cohort = list(divide_chunks(gen_zone_df["GEN UID"].values, cohort_size))
     del gen_zone_df
@@ -69,17 +71,16 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
     char_labels = char_order(num_cohorts)
 
     #Create a list to hold all the allocations for the 24 hours
-    temp = []
+    scen_em_df = []
     #Loop through all the csv files
     for f in range(len(files_list)):
         #For each scenario file, open and read it into a df
-        em_df = pd.read_table(files_list[f], sep = ",",
-                         header = 0, index_col = False,
-                          usecols = ["Date", "Hour", "Generator", "CO2 Emissions metric ton", 
-                                     "Dispatch"])
+        em_df = pd.read_table(files_list[f], sep = ",", header = 0, index_col = False,
+                              usecols = ["Date", "Hour", "Generator", "CO2 Emissions metric ton", "Dispatch"])
+        
         #label the scenario number to keep track
         scen_num = files_list[f].name[5:9]
-        #full_em_df =  pd.concat([full_em_df, temp_df], ignore_index = True, sort=False)
+        
         #Create new column with generator type
         em_df["Type"] = em_df["Generator"].apply(lambda x: gen_type(x))
         
@@ -99,11 +100,10 @@ def gen_cohorts(num_cohorts: int, folder_path: str, area_fname: str):
             for i in range((2**num_cohorts) - 1):
                 char_values[i] = np.divide(np.sum(cohort_em[to_bool_list(char_labels[i])]),
                                                 np.sum(cohort_dispatch[to_bool_list(char_labels[i])]))
-            temp.append([scen_num, h] + char_values.tolist())
+            scen_em_df.append([scen_num, h] + char_values.tolist())
 
     #Create a df to store all the scenarios allocation values
-    full_em_df = pd.DataFrame(data = temp, 
-                                columns = ["Scenario", "Hour"]  + char_labels)
+    full_em_df = pd.DataFrame(data = scen_em_df,  columns = ["Scenario", "Hour"]  + char_labels)
 
     full_em_df.set_index(["Scenario", "Hour"], inplace = True)
     #Change all nonporucing assets from Nan to zeros
@@ -156,7 +156,7 @@ def shap_alloc(num_scen: int, alpha: float, num_cohorts: int, scen_df: object):
                            index = scen_df.index),
                          scen_df[char_order(num_cohorts)[0]]], axis =1 )
 
-    #Compute the 95th percentile for each hour accross all scenarious in the BAU case
+    #Compute the percentile for each hour accross all scenarious in the BAU case
     scen_df["VaR"] = scen_df[char_order(num_cohorts)[0]].groupby(level = "Hour").transform("quantile",
                                                                                  quantile, interpolation = "lower")
 

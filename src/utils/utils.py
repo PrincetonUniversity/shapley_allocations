@@ -20,70 +20,6 @@ def gen_type(generator: str) -> str:
     """
     return  generator.split("_")[1]
 
-#Wang cheng lui shapley
-#First define the semi-tensor product
-def stp(A: np.ndarray, B: np.ndarray) -> np.ndarray:
-    """Give to numpy arrays A and B where A is mxn and B is pxq then this computes the
-    semi-tensor product
-    
-    Parameters
-    -----------
-    A: array
-        a mxn matrix 
-    B: array
-        a pxq matrix
-
-    Returns
-    -------
-    matrix
-        a matrix that is the result of the semi-tensor product.
-        The dimension is m(lcm(n,p)/n)xq(lcm(n,p)/p), where lcm(n,p) is the least
-        common multiple of n and p
-    """
-    #First identify the shape of the matrices
-    [m,n] = A.shape
-    [p,q] = B.shape
-
-    #if dimensions are the same then multiple them using standard matrix product
-    #However, if dimensions are not the same then we proceed with stp formula
-    if n != p:
-        #Find the least common multiple
-        t = math.lcm(n,p)
-        #Create identitiy matrix
-        ident_A = np.identity(t //n)
-        ident_B = np.identity(t//p)
-        #Do the matrix multiplication of the kronecker product
-        A = np.kron(A, ident_A)
-        B = np.kron(B, ident_B)
-    return np.matmul(A,B)
-
-#Define the recursive STP
-#TODO: Is this function used anywhere?
-def rec_stp(x: np.ndarray, n: int):
-    """Given a a 2xn matrix, where n is the number of players in the game, recursively apply STP
-    to each column.
-    This was useful in understanding the examples in the paper that generated the psuedo logical
-    function for the structure vector.
-    
-    Parameters
-    -----------
-    A: array
-        a 2xn matrix 
-    n: int
-        the number of columns of x and players of the coop game
-
-    Returns
-    -------
-    matrix
-        a matrix from repeated stp products. The matrix is (2^n)x1
-    """
-    #Base case: if it is just 1 vector then return the vector
-    if n == 1:
-        return x
-    else:
-        #Else recursively multiple
-        return(stp(x[:,0], rec_stp(x[:,1:], n-1)))
-
 def rec_coef(n: int) -> np.ndarray:
     """Given the number of players in the game, identify the vector that holds all the counting
     coeficients in the shapley value computation.
@@ -157,28 +93,8 @@ def shap_alloc_helper(i: int, n: int) -> np.ndarray:
         value += (math.factorial(rec_val[j]) * (math.factorial(n-1-rec_val[j])) * T[:,j])
     return(value/ math.factorial(n))
 
-#create psuedo logical vector
-#TODO: Is this function used anywhere?
-def psuedo_log(x):
-    """Given a coalition with 1 at index i of the vector x as player i is in the coalition and 0 as
-    not in coalition, computes the psuedo logical array.
-    
-    Parameters
-    -----------
-    x: array
-        the coalition represented by 1 and 0
-
-    Returns
-    -------
-    matrix
-        a 2 x n vector that is the psuedo logical matrix. Can be inputed to in recursive stp 
-    """
-    #Add a new row that is just 1 - value of index i
-    return(np.matrix([x, np.ones(len(x), dtype = int) - x]))
-
 #Create a list that gives the ordering for the charateristic function
 #Turns out it is just the binary numbers in reverse order
-#TODO: Is this function used anywhere?
 def char_order(n: int) -> list:
     """Given the number of players n in the coop game, give the correct order of the payoff
     functions  in the structure vector C_v of the payoff function. Needs to be in the correct order
@@ -211,7 +127,6 @@ def char_order(n: int) -> list:
 
 #Create a function that converts the binary numbers to boolean list
 #in opposite ditection because the 0s are the ones I idealize
-#TODO: Is this function used anywhere?
 def to_bool_list(x):
     list = []
     #Takes a string binary
@@ -219,16 +134,11 @@ def to_bool_list(x):
         list.append(bool(int(i)))
     return(list)
 
-#TODO: Is this function used anywhere?
-def flatten(xss):
-    return [x for xs in xss for x in xs]
-
 def ceildiv(a, b):
     return -(a // -b)
 
-
-def divide_chunks(l, n):       
+def divide_chunks(length, n):       
     # looping till length l 
-    for i in range(0, len(l), n):  
-        yield l[i:i + n] 
+    for i in range(0, len(length), n):  
+        yield length[i:i + n] 
   

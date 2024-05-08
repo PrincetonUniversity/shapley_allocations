@@ -1,7 +1,8 @@
 import unittest
-import pandas as pd
 
+import pandas as pd
 from shapley.shapley import gen_cohorts, shap_alloc
+
 
 class TestExample(unittest.TestCase):
     #Note that every test starts with the prefix "test_".
