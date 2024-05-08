@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "shapley_allocations"
 description = "TODO: ADD HERE"
-version = "1.0.0"
+version = "0.1.0"
 
 dependencies = ["numpy", "pandas", "scipy"]
 requires-python = ">=3.9"
