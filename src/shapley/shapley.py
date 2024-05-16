@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from utils.utils import (
     char_order,
-    divide_chunks2,
     shap_Phi,
     to_bool_list,
     output,
@@ -14,6 +13,12 @@ from utils.utils import (
 #################################
 #PREPROCESSING: TAILORED FOR THE SPECIFIC INPUT
 #################################
+def read_cohort_df():
+    """
+    Convert cohort df into a list
+    """
+    return
+
 def gen_df(folder_path: str, num_files: int, 
            indx: list, output_cols: list):
     """Generates the dataframe with appropriate output values for each scenario
@@ -81,8 +86,8 @@ def gen_cohort(num_cohorts: int, area_fname: str, indx: str):
     area_fname: str
         the name of the file containing the area mapping corresponding
         to the generator name
-    indx: list
-        string list of the column name that contains the id of the generators
+    indx: str
+        the column name that contains the id of the generators
 
     Returns
     -------
@@ -99,9 +104,12 @@ def gen_cohort(num_cohorts: int, area_fname: str, indx: str):
     #Generate the cohort list
     #cohort = list(divide_chunks2(gen_zone_df.index.to_list(), num_cohorts))
     cohort = list(split(gen_zone_df.index.to_list(), num_cohorts))
-    #Save the cohorts as a text file
-    with open("cohort.txt", "w") as output:
-        output.write(str(cohort))
+    #Create a column in gen_zone_df that shows which cluster the cohort is in
+    gen_zone_df = gen_zone_df.assign(Cluster = 0)
+    for n in range(num_cohorts):
+        gen_zone_df.loc[cohort[n], "Cluster"] = n
+    #Save the cohorts as a csv
+    pd.DataFrame(gen_zone_df["Cluster"]).to_csv("cohort.csv")
     return(cohort)
 
 def gen_cohort_payoff(num_cohorts: int, cohorts: list, folder_path: str, 
@@ -180,9 +188,11 @@ def gen_cohort_payoff(num_cohorts: int, cohorts: list, folder_path: str,
     #Fill in the vector
     #Want to only filter from the second level. Then reset the index at second level
     for s in range(len(tail_indx)):
+        #First look at scenarios one by one
         scen_df = computed_df.loc[(computed_df.index.get_level_values(indx[0]) == tail_indx[s],
                                     slice(None), slice(None))]
         for n in range((2**num_cohorts) - 1):
+            #Then for the different coalitions
             coal_df = scen_df.loc[(slice(None),
                                     slice(None),
                                     computed_df.index.unique(level = 2)[to_bool_list(char_labels[n])]),
@@ -264,3 +274,9 @@ test = (gen_cohort_payoff(2, cohort, "/Users/felix/Programs/orfeus/2018-08-01/em
 print(shap(test,2))
 print(sum_tail(shap(test,2),1))
 '''
+#cohort = gen_cohort(2, "/Users/felix/Github/shapley/texas7k_2020_gen_to_zone.csv",
+ #                   "GEN UID")
+
+#print(shap(np.array([3,2,2,1,2,1,1,0]), 3, 1))
+#print(shap(np.array([2,1,1,0]), 2, 1))
+#print(shap(np.array([2,1,1,0]), 2, 1))
