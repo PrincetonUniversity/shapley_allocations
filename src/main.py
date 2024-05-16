@@ -1,8 +1,9 @@
 import argparse
 import time
 from datetime import timedelta
+import pandas as pd
 
-from shapley.shapley import gen_cohorts, shap_alloc
+from shapley.shapley import gen_df, tail_sims, gen_cohort, gen_cohort_payoff, shap
 
 #Start the timer
 starttime = time.perf_counter()
@@ -15,6 +16,14 @@ if __name__=="__main__":
     parser.add_argument("--alpha", type=float, help="1-quantile.", default=0.05)
     parser.add_argument("--num_scen", type=int, help="Number of scenarios.", default=500)
     parser.add_argument("--num_cohorts", type=int, help="Number of cohorts.", default=3)
+    parser.add_argument("--indx", type=list, help="Index columns to be used", 
+                        default=["Scenario", "Hour"])
+    parser.add_argument("--output_cols", type=list, help="The numeric data to be used", 
+                        default=["CO2 Emissions metric ton", "Dispatch"])
+    parser.add_argument("--asset_id", type=str, help="In the file used for cohorting, unique id of asset", 
+                        default="GEN UID")
+    parser.add_argument("--sec_asset_id", type=str, help="In the main file, unique id of asset column", 
+                        default="Generator")
     args = parser.parse_args()
 
     #Static variables
@@ -34,9 +43,25 @@ if __name__=="__main__":
 
     num_cohorts = args.num_cohorts
 
-    scen_df = gen_cohorts(num_cohorts, folder_path, area_fname)
-    result = shap_alloc(num_scen, alpha, num_cohorts, scen_df)
-    result.to_csv(output_file)
+    indx = args.indx
+
+    output_cols = args.output_cols
+
+    asset_id = args.asset_id
+
+    sec_asset_id = args.sec_asset_id
+
+    generator_df = gen_df(folder_path, num_scen, [indx[1]], output_cols)
+
+    tail_scen = tail_sims(alpha, generator_df, indx, "Output")
+
+    cohorts = gen_cohort(num_cohorts, area_fname, asset_id)
+
+    char_matrix = gen_cohort_payoff(num_cohorts, cohorts, folder_path,
+                  tail_scen, sec_asset_id, indx, output_cols)
+    
+    result = shap(char_matrix, num_cohorts, alpha*num_scen)
+    pd.DataFrame(result).to_csv(output_file)
 
 duration = timedelta(seconds=time.perf_counter()-starttime)
 print('Job took: ', duration)

@@ -48,15 +48,15 @@ def shap_Phi(num_cohorts: int):
         eta[j] = (math.factorial(l_vector[j]) * 
                    (math.factorial((num_cohorts-1)-l_vector[j])))
 
-        Phi = np.zeros(( 2**num_cohorts, num_cohorts))
+    Phi = np.zeros(( 2**num_cohorts, num_cohorts))
     for m in range(1, num_cohorts+1):
-        eta_m = list(divide_chunks2(eta, m))
-        for j in range(0,m+1, 2):
-            Phi[j*((2**num_cohorts)//(2**(m))):(j+1)*((2**num_cohorts)//(2**(m))),
-                (m-1)] = eta_m[j % m]
-            Phi[(j+1)*((2**num_cohorts)//(2**(m))):(j+2)*((2**num_cohorts)//(2**(m))),
-                (m-1)] = np.multiply(eta_m[j % m],-1)
-    return(np.multiply(Phi, 1/math.factorial(num_cohorts)))   
+        eta_m = list(divide_chunks2(eta, 2**(m-1)))
+        for j in range(0,(2**m) -1, 2):
+            Phi[j*((2**num_cohorts)//(2**m)):(j+1)*((2**num_cohorts)//(2**m)),
+                (m-1)] = eta_m[j % 2**(m-1)]
+            Phi[(j+1)*((2**num_cohorts)//(2**m)):(j+2)*((2**num_cohorts)//(2**m)),
+                (m-1)] = np.multiply(eta_m[j % 2**(m-1)],-1)
+    return(Phi * (1/math.factorial(num_cohorts)))   
 
 #Define the matrix T_i
 def shap_helper(i: int, N: int) -> np.ndarray:
@@ -223,7 +223,10 @@ def divide_chunks2(item_list: list, m: int):
     for i in range(0, len(item_list), (len(item_list)//m)):  
         yield item_list[i:i + len(item_list)//m]
 
-#def sub_block(eta: np.ndarray, size: int,  m: int):
+def split(a, n):
+    k, m = divmod(len(a), n)
+    return(a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
+
 def output(df, output_cols):
      """Given a dataframe with only the columns that should be modified
     
@@ -243,5 +246,8 @@ def output(df, output_cols):
      col_sum_df["Output"] = col_sum_df[output_cols[0]] / col_sum_df[output_cols[1]]
      return(col_sum_df["Output"])
 
+def sum_tail(arr: np.ndarray, divisor: int):
+    #Currently only works for 3d aray
+    return(np.sum(arr, axis = 0) * (1/divisor))
 #print(shap_Phi(2))
 #print(char_order(2))
