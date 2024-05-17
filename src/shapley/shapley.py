@@ -182,6 +182,7 @@ def gen_cohort_payoff(num_cohorts: int, cohorts_df, folder_path: str,
                                     slice(None),
                                     computed_df.index.unique(level = 2)[to_bool_list(char_labels[n])]),
                                     :].reset_index()
+            coal_df.fillna(0, inplace = True)
             output_results = output(coal_df[[indx[1]] + output_cols].groupby(indx[1]), output_cols)
             char_values[s,n,output_results.index.values] =  output_results.values
     #return the dataframe

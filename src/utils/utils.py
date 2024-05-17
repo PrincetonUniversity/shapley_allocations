@@ -174,14 +174,14 @@ def output(df, output_cols):
     
     Parameters
     -----------
-    df: dataFrame
+    df: pd.DataFrame
         A dataframe containing the columns that should be evaluated
     output_cols: list
         list of strings containing the column names
 
     Returns
     -------
-    float
+    pd.Series
         elementwise division of the two vectors. 
     """ 
     col_sum_df = df.sum()
