@@ -26,7 +26,7 @@ if __name__=="__main__":
     parser.add_argument("--sec_asset_id", type=str, help="In the main file, unique id of asset column", 
                         default="Generator")
     parser.add_argument("--cluster_fname", type=str, help="Cluster file to use if it already exists", 
-                        default="Generator")
+                        default="texas7k_cluster.csv")
     args = parser.parse_args()
 
     #Static variables
@@ -60,9 +60,9 @@ if __name__=="__main__":
 
     tail_scen = tail_sims(alpha, generator_df, indx, "Output")
 
-    cohorts = gen_cohort(num_cohorts, area_fname, asset_id)
+    cohorts = pd.read_csv(cluster_fname, header = 0, index_col = 0)
 
-    char_matrix = gen_cohort_payoff(num_cohorts, cohorts, folder_path,
+    char_matrix = gen_cohort_payoff(num_cohorts, cohorts.squeeze(), folder_path,
                   tail_scen, sec_asset_id, indx, output_cols)
     
     result = shap(char_matrix, num_cohorts, np.ceil(alpha*num_scen))
