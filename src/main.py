@@ -14,19 +14,19 @@ if __name__=="__main__":
     parser.add_argument("--folder_path", type=str, help="Path to the input file.")
     parser.add_argument("--area_fname", type=str, help="Pass to the area filename csv file.")
     parser.add_argument("--output_file", type=str, help="Path to the desired output file.")
+    parser.add_argument("--num_cohorts", type=int, help="Number of cohorts.")
     parser.add_argument("--alpha", type=float, help="1-quantile.", default=0.05)
     parser.add_argument("--num_scen", type=int, help="Number of scenarios.", default=500)
-    parser.add_argument("--num_cohorts", type=int, help="Number of cohorts.")
     parser.add_argument("--indx", type=list, help="Index columns to be used", 
                         default=["Scenario", "Hour"])
     parser.add_argument("--output_cols", type=list, help="The numeric data to be used", 
                         default=["CO2 Emissions metric ton", "Dispatch"])
-    parser.add_argument("--asset_id", type=str, help="In the file used for cohorting, unique id of asset", 
-                        default="GEN UID")
-    parser.add_argument("--sec_asset_id", type=str, help="In the main file, unique id of asset column", 
-                        default="Generator")
-    parser.add_argument("--cluster_fname", type=str, help="Cluster file to use if it already exists", 
-                        default="texas7k_cluster.csv")
+    parser.add_argument("--asset_id", type=str, help="In the file used for cohorting, "
+                        "unique id of asset", default="GEN UID")
+    parser.add_argument("--sec_asset_id", type=str, help="In the main file, "
+                        "unique id of asset column", default="Generator")
+    parser.add_argument("--cluster_fname", type=str, help="Cluster file to use if it already "
+                        "exists", default="texas7k_cluster.csv")
     args = parser.parse_args()
 
     #Static variables
