@@ -4,7 +4,7 @@ from datetime import timedelta
 import pandas as pd
 import numpy as np
 
-from shapley.shapley import gen_df, tail_sims, gen_cohort, gen_cohort_payoff, shap
+from shapley.shapley import gen_bau_scen, tail_sims, gen_cohort, gen_cohort_payoff, shap
 
 #Start the timer
 starttime = time.perf_counter()
@@ -24,6 +24,8 @@ if __name__=="__main__":
     parser.add_argument("--asset_id", type=str, help="In the file used for cohorting, unique id of asset", 
                         default="GEN UID")
     parser.add_argument("--sec_asset_id", type=str, help="In the main file, unique id of asset column", 
+                        default="Generator")
+    parser.add_argument("--cluster_fname", type=str, help="Cluster file to use if it already exists", 
                         default="Generator")
     args = parser.parse_args()
 
@@ -52,7 +54,9 @@ if __name__=="__main__":
 
     sec_asset_id = args.sec_asset_id
 
-    generator_df = gen_df(folder_path, num_scen, [indx[1]], output_cols)
+    cluster_fname = args.cluster_fname
+
+    generator_df = gen_bau_scen(folder_path, num_scen, [indx[1]], output_cols)
 
     tail_scen = tail_sims(alpha, generator_df, indx, "Output")
 

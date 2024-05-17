@@ -1,9 +1,8 @@
 import unittest
-
 import pandas as pd
 
-from shapley.shapley import gen_cohort, shap
-from utils.utils import shap_Phi
+from shapley.shapley import gen_cohort, gen_bau_scen, tail_sims, gen_cohort_payoff, shap
+
 
 class TestExample(unittest.TestCase):
     #Note that every test starts with the prefix "test_".
@@ -13,30 +12,37 @@ class TestExample(unittest.TestCase):
         """
 
         #Initialize the class with my variables
-        #The variables for the gen_cohort function
         self.num_scen = 5
         self.num_cohorts = 3
-        self.folder_path = "/Users/felix/Programs/orfeus/2018-08-01/emission"
-        self.area_fname = "../texas7k_2020_gen_to_zone.csv"
+        self.folder_path = "../tests/scenarios"
+        self.area_fname = "../tests/test_generator_id.csv"
         self.asset_id = "GEN UID"
+        self.indx = ["Scenario", "Hour"]
+        self.output_cols = ["CO2 Emissions metric ton", "Dispatch"]
 
         #Vairables for the shap_alloc function
-        self.alpha = 1/3
+        self.alpha = 0.1
 
     def test_gen_cohort(self):
         #Suppose my code generates a+b
-        gen_cohort(self.num_cohorts,self.area_fname, self.asset_id)
-        result_df = pd.read_csv("cohort.csv", header = 0, index_col=0)
+        result_df = gen_cohort(self.num_cohorts,self.area_fname, self.asset_id)
         expected_result = pd.read_csv("tests/test_gen_cohort.csv", header = 0, index_col = 0)
         pd.testing.assert_frame_equal(result_df, expected_result)
 
-    def test_shap(self):
-        phi = shap_Phi(self.num_cohorts)
-    '''
-    def test_shap_alloc(self):
-        #Suppose my code approximates a-b and I know the test should be positive for some reason
-        result_df = shap_alloc(self.num_scen, self.alpha, self.num_cohorts, 
-                               pd.read_csv("tests/test_gen_cohort.csv", header = [0], index_col = [0,1]))
-        expected_result = pd.read_csv("tests/test_shap_alloc.csv", header = [0], index_col = [0])
+    def test_gen_bau_scen(self):
+        result_df = gen_bau_scen(self.folder_path, self.num_scen, [self.indx[1]],self.output_cols)
+        expected_result = pd.read_csv("tests/test_gen_bau_scen.csv", header = 0, index_col = [0,1])
         pd.testing.assert_frame_equal(result_df, expected_result)
-    '''
+
+    def test_tail_sims(self):
+        scen_df = gen_bau_scen(self.folder_path, self.num_scen, [self.indx[1]],self.output_cols)
+        result = tail_sims(self.alpha, scen_df, self.indx, self.output_cols)
+        expected_result = [(1003,0), (1002,1),(1000,2),(1001,3), (1001,4),
+                  (1003,5),(1000,6),(1003,7),(1001,8),(1003,9),
+                  (1001,10),(1002,11),(1000,12),(1002,13),(1001,14),
+                  (1003,15),(1001,16),(1002,17),(1003,18),(1001,19),
+                  (1001,20),(1001,21),(1001,22),(1002,23)]
+        self.assertCountEqual(result, expected_result)
+
+    #def test_shap(self):
+     #   phi = shap_Phi(self.num_cohorts)

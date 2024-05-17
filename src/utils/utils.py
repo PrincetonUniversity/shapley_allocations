@@ -73,61 +73,6 @@ def shap_Phi(num_cohorts: int) -> np.ndarray:
                 (m-1)] = np.multiply(eta_m[j // 2],-1)
     return(Phi * (1/math.factorial(num_cohorts)))   
 
-#Define the matrix T_i
-'''
-def shap_helper(i: int, N: int) -> np.ndarray:
-    """Given the cluster n allocation who we want to compute and the number of players in the game, 
-    identify the matrix that holds the different basis vectors needed to compute the marginal
-    cooperative payoffs
-    
-    Parameters
-    -----------
-    i: int
-        the player i that we want to compute the allocation for
-    N: int
-        the number of clusters in the coop game
-
-    Returns
-    -------
-    matrix
-        a matrix of dimention 2^N x 2^(N-1). It represents T_i or equation 6
-    """
-    #Computed with diagonal blocks
-    if i >= 1:    
-        doubly_identity = np.append(np.identity(2**(N-i), dtype = int), 
-                                -1 * np.identity(2**(N-i), dtype = int), axis = 0)
-        dub_id_list = [doubly_identity] * (2**(i-1))
-        return(block_diag(*dub_id_list))
-'''
-'''
-#Define the shapley allocation for agent i
-def shap_alloc_helper(n: int, N: int) -> np.ndarray:
-    """Given a cluster's shap value to compute, and the number of clusters in the game, 
-    compute the shapley allocation for that cluster
-    
-    Parameters
-    -----------
-    n: int (between 1 and N)
-        the player n that we want to compute the allocation for 
-    N: int
-        the number of clusters in the coop game
-
-    Returns
-    -------
-    matrix
-        a 2^N x 1 matrix that will be multiplied with the  structure vector of the characteristic
-        function (C) This is the summed term in equation 5 divided by n!
-    """
-    #Call of the helper function
-    rec_val = rec_coef(N-1)
-    T = shap_helper(n,N)
-    #Since we are summing we create a zero vector as our inititialization
-    value = np.zeros(2 ** N, dtype = int)
-    #Sum accross all coalitions not containing i
-    for j in range(2 ** (N-1)):
-        value += (math.factorial(rec_val[j]) * (math.factorial(N-1-rec_val[j])) * T[:,j])
-    return(value/ math.factorial(N))
-'''
 #Create a list that gives the ordering for the charateristic function
 #Turns out it is just the binary numbers in reverse order
 def char_order(N: int) -> list:
@@ -183,66 +128,12 @@ def to_bool_list(x: str):
          #Go character by character evaluating the boolean
         list.append(bool(int(i)))
     return(list)
-'''
-def ceildiv(a: int, b: int):
-    """Given two integers, where a is the dividend, b is the divisor, obtain the smallest
-     integer quotient c s.t. c*b > a.
-    
-    Parameters
-    -----------
-    a: int
-        the divisor
-    b: int
-        the divisor
 
-    Returns
-    -------
-    int
-        the cieling of the quotient. 
-    """
-    return -(a // -b)
-'''
-'''
-def divide_chunks(item_list: list, m: int): 
-    """Given a list to split into m equal pieces, return the slices of the list
-    
-    Parameters
-    -----------
-    item_list: list
-        list that you want to split
-    m: int
-        the number of equal pieces to split the length
+def flatten(xss):
+    return [x for xs in xss for x in xs]
 
-    Returns
-    -------
-    list
-        list of list containing the chunks of the list. 
-    """      
-    # looping till length l 
-    for i in range(0, len(item_list), m):  
-        yield item_list[i:i + m]
-
-def divide_chunks2(item_list: list, m: int): 
-    """Given a list to split into m equal pieces, return the slices of the list
-    
-    Parameters
-    -----------
-    item_list: list
-        list that you want to split
-    m: int
-        the number of equal pieces to split the length
-
-    Returns
-    -------
-    list
-        list of list containing the chunks of the list. 
-    """      
-    # looping till length l 
-    for i in range(0, len(item_list), (len(item_list)//m)):  
-        yield item_list[i:i + len(item_list)//m]
-'''
 def split(item_list: list, n: int):
-    """Given a list to split into m equal pieces, return the slices of the list
+    """Given a list to split into n equal pieces, return the slices of the list
     
     Parameters
     -----------
@@ -258,6 +149,25 @@ def split(item_list: list, n: int):
     """
     k, m = divmod(len(item_list), n)
     return(item_list[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
+
+def split_indx(item_length: int, n: int):
+    """Given a list length to split into n equal pieces, return the indices of the list
+    
+    Parameters
+    -----------
+    item_length: int
+        length of list that you want to split
+    n: int
+        the number of equal pieces to split the length
+
+    Returns
+    -------
+    list
+        list of indices containing the chunks of the list. 
+    """
+    k, m = divmod(item_length, n)
+    
+    return(flatten([i] * (k + (min(i+1, m)- min(i, m))) for i in range(n)))
 
 def output(df, output_cols):
     """Given a dataframe with only the columns that should be modified
