@@ -26,10 +26,10 @@ Suppose there is a game with $N=3$ coalitions, labelled $K_1, K_2, K_3$. Let the
 ```math
 v(K) = 
 \begin{array}{cc}
-  \left\{ & 
+  \{ & 
     \begin{array}{cc}
       1 & K \in \{K_1, K_2, K_3\} \\
-      2 & K \in \{K_1 \cup K_2, K_1 \cup K_3, K_2 \cup K_3\right\} \\
+      2 & K \in \{K_1 \cup K_2, K_1 \cup K_3, K_2 \cup K_3\} \\
       3 & K = K_1 \cup K_2 \cup K_3
     \end{array}
 \end{array}.
