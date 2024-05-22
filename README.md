@@ -29,10 +29,9 @@ v(K) =
   \left\{ & 
     \begin{array}{cc}
       1 & K \in \{K_1, K_2, K_3\} \\
-      2 & K \in \{K_1 \cup K_2, K_1 \cup K_3, K_2 \cup K_3 \\
+      2 & K \in \{K_1 \cup K_2, K_1 \cup K_3, K_2 \cup K_3\right\} \\
       3 & K = K_1 \cup K_2 \cup K_3
     \end{array}
-  \right\}
 \end{array}.
 ```
 The payoff function in this case expresses that the payoff value equals the number of coalitions. Thus in this case, a fair way to distribute the payoff for each coalitions marginal contribution to the system payoff is by rewarding each participating coalition a unit of the payoff. It is not always the case that the marginal contibution is additive in this way, and that is where the Shapley allocations is introduced to handle such cases.
