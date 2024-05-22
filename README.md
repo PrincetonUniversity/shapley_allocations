@@ -4,7 +4,16 @@ shapley_allocations is a Python library for computing exact symmetric [shapley](
 
 ## Installation
 
-Request [pip](https://pip.pypa.io/en/stable/) to install shapley_allocations.
+Make sure Python 3.9 or later is installed.
+
+Clone the repo with the following command:
+```bash
+git clone git@github.com:PrincetonUniversity/shapley_allocations.git
+```
+
+Change directory to the newly created `shapley_allocations` directory.
+
+Install shapley_allocations with [pip](https://pip.pypa.io/en/stable/):
 
 ```bash
 pip install shapley_allocations
