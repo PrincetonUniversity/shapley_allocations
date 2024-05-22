@@ -24,15 +24,16 @@ pip install shapley_allocations
 ### Shapley Intuition
 Suppose there is a game with $N=3$ coalitions, labelled $K_1, K_2, K_3$. Let their payoff function $v: 2^3 \rightarrow \mathbb{R}$ be such that 
 ```math
-v(K) = 
+v(K) =
+\begin{lcases}
 \begin{array}{cc}
-  \left\{ & 
+  & 
     \begin{array}{cc}
       1 & K \in \{K_1, K_2, K_3\} \\
       2 & K \in \{K_1 \cup K_2, K_1 \cup K_3, K_2 \cup K_3\} \\
       3 & K = K_1 \cup K_2 \cup K_3
     \end{array}
-\end{array}.
+\end{array}\end{lcases}.
 ```
 The payoff function in this case expresses that the payoff value equals the number of coalitions. Thus in this case, a fair way to distribute the payoff for each coalitions marginal contribution to the system payoff is by rewarding each participating coalition a unit of the payoff. It is not always the case that the marginal contibution is additive in this way, and that is where the Shapley allocations is introduced to handle such cases.
 
