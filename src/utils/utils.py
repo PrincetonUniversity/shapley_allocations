@@ -1,6 +1,7 @@
 import math
-
+from pathlib import Path
 import numpy as np
+import pandas as pd
 #from scipy.linalg import block_diag
 
 
@@ -169,7 +170,7 @@ def split_indx(item_length: int, n: int):
     
     return(flatten([i] * (k + (min(i+1, m)- min(i, m))) for i in range(n)))
 
-def output(df, output_cols):
+def output_emission_rate(df: pd.DataFrame, output_cols: list, *args):
     """Given a dataframe with only the columns that should be modified
     
     Parameters
@@ -188,6 +189,71 @@ def output(df, output_cols):
     col_sum_df["Output"] = col_sum_df[output_cols[0]] / col_sum_df[output_cols[1]]
     return(col_sum_df["Output"])
 
+def output(df: pd.DataFrame, output_cols: list, carbon_cap: float, 
+           num_gen: int = None):
+    """Given a dataframe with only the columns that should be modified
+    
+    Parameters
+    -----------
+    df: pd.DataFrame
+        A dataframe containing the columns that should be evaluated
+    output_cols: list
+        list of strings containing the column names
+    carbon_cap: float
+        The maximum amount of carbon allowed
+
+    Returns
+    -------
+    pd.Series
+        elementwise subtraction and take the maximum between that and 0. 
+    """ 
+    if (not num_gen):
+        num_gen = df.size()
+
+    #First obtain number of generators in each hour and total emissions
+    col_sum_df = df.sum()
+    #col_sum_df = df.agg(count=(output_cols[0], "size"), sum=(output_cols[0], 'sum'))
+    # Then multiple the count of generators by the cap
+    #col_sum_df["cap"] = col_sum_df["count"].mul(carbon_cap)
+    # Get the excess emission
+    col_sum_df["excess"] = col_sum_df[output_cols[0]] - (carbon_cap * num_gen)
+    #Only take the minimum of that value and zero
+    col_sum_df["Output"] = col_sum_df["excess"].clip(lower = 0)
+    return(col_sum_df["Output"])
+
+def carbon_excess(df: pd.DataFrame, output_cols: list, carbon_cap: float, 
+           num_gen: int = None):
+    """Given a dataframe with only the columns that should be modified
+    
+    Parameters
+    -----------
+    df: pd.DataFrame
+        A dataframe containing the columns that should be evaluated
+    output_cols: list
+        list of strings containing the column names
+    carbon_cap: float
+        The maximum amount of carbon allowed
+
+    Returns
+    -------
+    pd.Series
+        elementwise subtraction and take the maximum between that and 0. 
+    """ 
+    if (not num_gen):
+        num_gen = df.size()
+
+    #First obtain number of generators in each hour and total emissions
+    col_sum_df = df.sum()
+    #col_sum_df = df.agg(count=(output_cols[0], "size"), sum=(output_cols[0], 'sum'))
+    # Then multiple the count of generators by the cap
+    #col_sum_df["cap"] = col_sum_df["count"].mul(carbon_cap)
+    # Get the excess emission
+    col_sum_df["excess"] = col_sum_df[output_cols[0]] - (carbon_cap * num_gen)
+    #Only take the minimum of that value and zero
+    col_sum_df["Output"] = col_sum_df["excess"].clip(lower = 0)
+    return(col_sum_df["Output"])
+
+'''
 def sum_tail(arr: np.ndarray, divisor: int):
     """Given a 3D vector, sum and take the average
     
@@ -205,3 +271,84 @@ def sum_tail(arr: np.ndarray, divisor: int):
     """ 
     #Currently only works for 3d aray
     return(np.sum(arr, axis = 0) * (1/divisor))
+'''
+    
+#Function that creates cohort based on categorical varibales
+def cluster_from_cat(df: pd.Series):
+    """
+    Given a dataframe with categorical variables corresponding to each unique generator
+    create a numerical representation of the categorical column to use as the cluster
+
+    Parameters
+    -----------
+    df: pd.Series
+        dataframe with the unique id as the index
+    cat_column: str
+        string of the column name that contains the categories
+
+    Returns
+    -----------
+    df: pd.Series
+        series with new column called clusters. And saves it
+    """
+    df["Cluster"] = pd.factorize(df.iloc[:,0])[0]
+    pd.DataFrame(df).to_csv("cohort.csv")
+    return(df["Cluster"])
+
+def scen_file_list(folder_path: str) -> list:
+    """
+    Given a folder, will extract all the csv files contained in that folder. It helps if the files
+    share a common pre-fix (i.e. file_1.csv, file_2.csv, ...)
+
+    Parameters
+    -----------
+    folder_path: str
+        absolute path of the folder containing all the csv files
+
+    Returns
+    -----------
+    list: 
+        list of the absolute path of all the csvs. 
+    int:
+        length of the file list
+    """
+    #Make the folder into a path object
+    folder_path = Path(folder_path)
+
+    #Open all emission files
+    #iterate over directory and store filenames in a list
+    #Only keep the csv files and put file names in a list
+    files_list = list(filter(lambda f: f.name.endswith('.csv'), folder_path.iterdir()))
+
+    return([files_list, len(files_list)])
+
+def scen_import(f_list: list, cols: list[str],suffix_char: list[int]) -> pd.DataFrame:
+    """Given the list of file paths, a list of columns that we want to use in the data:
+    the col identifying column of the data, the indices to be used when importing data,
+    and the columns used for computation, then creates a dataframe of all the files
+    
+    Parameters
+    -----------
+    folder_path: str
+        the name of the folder path containing the scenario files
+    cols: list
+        in each of the scenario files, what is the column name for the 
+        column that contains the ID, name of index columns of the file,
+        and column names to perform computation on
+    suffix_char: list
+        the start and end positions of the characters in the file name that index
+        the different files
+
+
+    Returns
+    -------
+    pd.DataFrame
+        dataframe holding all the csv in the file list
+    """
+    #Read all into a csv
+    em_df = (pd.read_csv(f, sep = ",", usecols = cols,
+                        header = 0).assign(Scenario = f.name[slice(suffix_char[0],suffix_char[1], 1)]) 
+                        for f in f_list)
+    #Concat into a dataframe from a generator class
+    #return(em_df)
+    return(pd.concat(em_df, ignore_index=True))
