@@ -2,18 +2,17 @@ from pathlib import Path
 from typing import Callable
 import numpy as np
 import pandas as pd
-from math import prod
+from random import shuffle
 from utils.utils import (
     char_order,
     shap_Phi,
     to_bool_list,
-    output, output_emission_rate,
-    split_indx, scen_file_list, scen_import)
+    split_indx)
 
 #################################
 #PREPROCESSING: TAILORED FOR THE SPECIFIC INPUT
 #################################
-def calc_col(df: pd.DataFrame, output_cols: list[str], group_cols: list[str], 
+def calc_col(df: pd.DataFrame, output_cols: list[str], player_id_col: str, group_cols: list[str], 
              output_fctn: Callable, **kwargs) -> pd.DataFrame:
     """Generates the new calculated column from the output cols and function. 
     
@@ -23,6 +22,8 @@ def calc_col(df: pd.DataFrame, output_cols: list[str], group_cols: list[str],
         the name of the folder path containing the scenario files
     output_cols: list
         the needed columns to calculate the new column
+    player_id_col: str
+
     group_cols: list
         the groupby column if needed
     output_fctn: function
@@ -36,8 +37,9 @@ def calc_col(df: pd.DataFrame, output_cols: list[str], group_cols: list[str],
         A dataframe with the newly generated output columns index by the group by
     """
     #Aggregate to the level given then input that into the arbitrary function
-    computed_df = output_fctn(df.groupby(by = group_cols), output_cols, 
-                              kwargs.get("allowance", None))
+    computed_df = output_fctn(df.groupby(by = group_cols), output_cols, player_id_col, 
+                              kwargs.get("allowance", None), kwargs.get("is_absolute", None), False,
+                              kwargs.get("price_df", None))
     #Change all NaNs to zero
     computed_df.fillna(0, inplace = True)
 
@@ -70,6 +72,7 @@ def gen_cohort(num_cohorts: int, area_fname: str, gen_id_col: str) -> pd.Series:
 
     #Generate the cohort list
     cohort_indx = list(split_indx(len(gen_zone_df.index.values),num_cohorts))
+    shuffle(cohort_indx)
 
     #Create a column in gen_zone_df that shows which cluster the cohort is in
     gen_zone_df = gen_zone_df.assign(Cluster = cohort_indx)
@@ -79,7 +82,7 @@ def gen_cohort(num_cohorts: int, area_fname: str, gen_id_col: str) -> pd.Series:
 
 def cluster_values(scen_em_df: pd.DataFrame, player_id_col: str,
                    cohorts_df: pd.Series, group_cols: list[str],
-                   output_cols: list[str], group_fctn: list[Callable] = ["sum", "sum"]) -> pd.DataFrame:
+                   output_cols: list[str], group_fctn: list[Callable]) -> pd.DataFrame:
     """Given the dataframe with appropriate cols, the player id column,
     the df containing the labels of the cluster for each player, 
     the index values of the df (could be multi-index), 
@@ -117,13 +120,13 @@ def cluster_values(scen_em_df: pd.DataFrame, player_id_col: str,
 
     #When aggregating to cluster level, specify how they should be aggregated
     computed_df = scen_em_df.groupby(by = group_cols + [cohorts_df.name]).agg(
-        dict(zip(output_cols, group_fctn))
-    ).set_axis(output_cols, axis = 1)
+        dict(zip(output_cols + [player_id_col], group_fctn + ["count"]))
+    ).set_axis(output_cols + [player_id_col], axis = 1)
 
     return(computed_df)
 
 def gen_cohort_payoff(group_cluster_df: pd.DataFrame, num_cohorts: int, 
-                      group_cols: list[str], output_cols: list[str], output_fctn: Callable,
+                      group_cols: list[str], output_cols: list[str], player_id_col: str, output_fctn: Callable,
                       **kwargs) -> np.ndarray:
     """Given the raw dataframe with appropriate cols, the number of clusters, 
     the respective df containing the labels of the clusters, 
@@ -177,8 +180,9 @@ def gen_cohort_payoff(group_cluster_df: pd.DataFrame, num_cohorts: int,
         char_cluster_df = group_cluster_df[group_cluster_df.index.get_level_values(len(group_cols)).
                                            isin(cluster_list[to_bool_list(char_labels[n])])]
         #Fill in the list with the outputs needed
-        char_values[n] = np.array(output_fctn(char_cluster_df.groupby(group_cols), output_cols, 
-                            kwargs.get("allowance", None)).values)
+        char_values[n] = np.array(output_fctn(char_cluster_df.groupby(group_cols), output_cols, player_id_col,
+                              kwargs.get("allowance", None), kwargs.get("is_absolute", None), True,
+                              kwargs.get("price_df", None)).values)
     #The characterist function of the empty cluster is always 0
     char_values[(2**num_cohorts) - 1] = np.zeros(np.shape(char_values[0]))
     #Combine all the arrays in list into a matrix
@@ -262,7 +266,7 @@ def var_shap(alloc_array: np.ndarray, tail_scen: list,
     return(alloc_df.sort_index())
 
 
-#'''
+'''
 [file_list, num_files] = scen_file_list("/Users/felix/Github/shapley/tests/scenarios")
 em_df = scen_import(file_list, ["Hour", "Generator", "CO2 Emissions metric ton", "Dispatch"], [5,9])
 scen_df = calc_col(em_df, ["CO2 Emissions metric ton", "Dispatch"], ["Scenario", "Hour"], 
@@ -285,4 +289,4 @@ char_matrix = gen_cohort_payoff(group_cluster_df, 2, ["Scenario", "Hour"],["CO2 
 alloc_df = shap(char_matrix, 2)
 result = var_shap(alloc_df, tail_scen, ["Scenario", "Hour"], np.ceil(0.05*5))
 
-#'''
+'''
