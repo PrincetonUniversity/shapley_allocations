@@ -49,16 +49,27 @@ Installing shapley adds the command shapley-det to your command line namespace. 
 shapley --alpha --num_scen --folder_path --area_fname --output_file --num_cohorts --group_cols --output_cols --asset_id --sec_asset_id --cluster_fname --output_kwargs
 ```
 `alpha` is a threshold for the value at risk calculation. It is interpreted as the tail losses 
+
 `num_scen` is the the number of Monte Carlo simulation. Each simulation should be in a different file
+
 `folder_path` is the path of the folder containing all of the simulation
+
 `area_fname` is the name of the file containing the ids of all the players in the game
+
 `output_file` is the file destination for the results of the Shapley allocations
+
 `num_cohorts` is the number of distinct coalitons
+
 `group_cols` is the index used in the scenario files. It is typically chosen as the list, `["Scenario", "Hour"]`
+
 `output_cols` is a list of column names that are used in computing the characteristic values
+
 `asset_id` is the column name of the `area_fname` that contains the players id
+
 `sec_asset_id` is the column name of the simulation files containing the player id
+
 `cluster_fname` if there is a premade cluster file already. If not, leave as `""`
+
 `output_kwargs` is a dict of the extra parameters used to compute the characteristic values
 
 ### Determining the worst case simulations
