@@ -46,10 +46,8 @@ Additionally, our emissions data is generated via Monte Carlo simulations due to
 Installing shapley adds the command shapley_allocations to your command line namespace. The simplest way to invoke this command from the terminal is:
 
 ```bash
-python -m shapley_allocations.main --num_scen $num_scen --folder_path $folder_path --area_fname $area_fname --output_file $output_file --num_cohorts $num_cohorts --alpha $alpha --group_cols $group_cols --output_cols $output_cols --asset_id $asset_id --sec_asset_id $sec_asset_id --cluster_fname $cluster_fname --output_kwargs $output_kwargs
+python -m shapley_allocations.main --folder_path $folder_path --area_fname $area_fname --output_file $output_file --num_cohorts $num_cohorts --alpha $alpha --num_scen $num_scen --group_cols $group_cols --output_cols $output_cols --asset_id $asset_id --sec_asset_id $sec_asset_id --cluster_fname $cluster_fname --char_func $char_func
 ```
-
-`num_scen` is the the number of Monte Carlo simulation. Each simulation should be in a different file.
 
 `folder_path` is the path of the folder containing all of the simulation.
 
@@ -59,19 +57,38 @@ python -m shapley_allocations.main --num_scen $num_scen --folder_path $folder_pa
 
 `num_cohorts` is the number of distinct coalitons.
 
-`alpha` is a threshold for the value at risk calculation. It is interpreted as the tail losses.
+`alpha` is a threshold for the value at risk calculation. It is interpreted as the tail losses. Default=0.05.
 
-`group_cols` is the index used in the scenario files. It is typically chosen as the list, `["Scenario", "Hour"]`.
+`num_scen` is the the number of Monte Carlo simulation. Each simulation should be in a different file. Default=500.
 
-`output_cols` is a list of column names that are used in computing the characteristic values.
+`group_cols` is the index used in the scenario files. The index names are separated by a single comma. Default=`"Scenario,Hour"`.
 
-`asset_id` is the column name of the `area_fname` that contains the players id.
+`output_cols` is a list of column names that are used in computing the characteristic values. Passed as a string separated by a comma. Default=`"CO2 Emissions metric ton,Dispatch,Unit Cost"`.
 
-`sec_asset_id` is the column name of the simulation files containing the player id.
+`asset_id` is the column name of the `area_fname` that contains the players id. Default=`"GEN UID"`
 
-`cluster_fname` if there is a premade cluster file already. If not, leave as `""`.
+`sec_asset_id` is the column name of the simulation files containing the player id. Default=`"Generator"`
 
-`output_kwargs` is a dict of the extra parameters used to compute the characteristic values.
+`cluster_fname` if there is a premade cluster file already. If not, leave as `""`. Default=`""`.
+
+`char_func` is the characteristic function to be used. Pass `"rate"/"carbon_excess"/"carbon_price"`.
+
+`allowance` (OPTIONAL) is the carbone allowence for each generator. This value is used only if char_func is carbon_excess or carbon_price.", default=50
+
+`is_absolute` (OPTIONAL) is whether the carbon allownce is relative (default) or absolute (if this is passed). This value is used only if char_func is carbon_excess or carbon_price.
+
+`price_fname` (OPTIONAL) is a path to a .csv file containing the LMP prices. This value is used only if char_func is carbon_price. Default=`""`.
+
+### Using the package from a Python script
+You can use the package from a Python script:
+```python
+from shapley_allocations.shapley.shapley import calc_shapley_var
+calc_shapley_var(folder_path=folder_path, output_cols=output_cols, group_cols=group_cols,
+                     sec_asset_id=sec_asset_id, alpha=alpha, output=char_func,
+                     cluster_fname=cluster_fname, num_cohorts=num_cohorts, area_fname=area_fname, asset_id=asset_id,
+                     num_scen=num_scen, output_file=output_file, allowance=allowance,
+                     is_absolute=is_absolute, price=price)
+```
 
 ### Determining the worst case simulations
 One way that we optimize the code, in terms of memory, is that we only focus on the worst case simulations. For instance, if there are 500 simulations, and we select the 5\% worst simulations resulting in 25 simulations.
