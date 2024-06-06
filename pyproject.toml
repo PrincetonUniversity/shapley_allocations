@@ -16,8 +16,8 @@ authors = [
 ]
 readme = "README.md"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+packages = ["shapley_allocations"]
 
 [project.optional-dependencies]
 dev = [
