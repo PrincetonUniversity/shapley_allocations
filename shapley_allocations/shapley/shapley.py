@@ -3,7 +3,9 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 from random import shuffle
-from shapley_allocations.utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
+#from shapley_allocations.utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
+#                                    to_bool_list, shap_Phi
+from utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
                                     to_bool_list, shap_Phi
 
 #################################
@@ -301,4 +303,4 @@ def calc_shapley_var(folder_path: str, output_cols: list[str], group_cols: list[
     result = calc_empirical_var(np.append(calc_shapley_value(char_matrix, num_cohorts), 
                                 char_matrix[:,0].reshape(len(tail_scen),1), axis = 1),
                       tail_scen, group_cols, np.ceil(alpha*num_scen))
-    pd.DataFrame(round(result,3)).to_csv(output_file)
+    pd.DataFrame(round(result,3)).to_csv(output_file, header = ["Coalition " + str(i) for i in range(num_cohorts)] + ["Total Allocation"])
