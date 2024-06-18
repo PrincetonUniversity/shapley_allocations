@@ -5,10 +5,10 @@ import pandas as pd
 import numpy as np
 from random import seed
 
-#from shapley_allocations.shapley.shapley import calc_shapley_var
-#from shapley_allocations.shapley.char_funcs import output_rate, output_carbon_excess, output_carbon_price
-from shapley.shapley import calc_shapley_var
-from shapley.char_funcs import output_rate, output_carbon_excess, output_carbon_price
+from shapley_allocations.shapley.shapley import calc_shapley_var
+from shapley_allocations.shapley.char_funcs import output_rate, output_carbon_excess, output_carbon_price
+#from shapley.shapley import calc_shapley_var
+#from shapley.char_funcs import output_rate, output_carbon_excess, output_carbon_price
 
 
 

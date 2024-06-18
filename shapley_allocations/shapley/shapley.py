@@ -3,10 +3,10 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 from random import shuffle
-#from shapley_allocations.utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
-#                                    to_bool_list, shap_Phi
-from utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
+from shapley_allocations.utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
                                     to_bool_list, shap_Phi
+#from utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
+ #                                   to_bool_list, shap_Phi
 
 #################################
 #PREPROCESSING: TAILORED FOR THE SPECIFIC INPUT
