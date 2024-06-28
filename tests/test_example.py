@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 
 from shapley_allocations.shapley.char_funcs import output_rate
+from shapley_allocations.shapley.char_funcs import output_carbon_excess
+from shapley_allocations.shapley.char_funcs import output_carbon_price
 #from shapley.char_funcs import output_rate
 
 class TestExample(unittest.TestCase):
@@ -23,7 +25,8 @@ class TestExample(unittest.TestCase):
         self.sec_asset_id = "Generator"
         self.index = [range(self.num_scen), [0,1]* 2]
         self.df = pd.DataFrame(data = np.transpose(np.array([list(range(1,21)), [1] * 20, 
-                                                             range(20,0,-1), ["A","B"] * 10])),
+                                                             list(range(20,0,-1)), [1,1,0,0] * 5],
+                                                               dtype= int)),
                                columns = self.output_cols + [self.sec_asset_id],
                                index = pd.MultiIndex.from_product(self.index, names = self.group_cols))
         self.allowance = 10
@@ -31,26 +34,26 @@ class TestExample(unittest.TestCase):
 
         #Vairables for the shap_alloc function
         self.alpha = 0.1
-    #'''
+    
     def test_output_rate(self):
-        expected_index = [range(self.num_scen), [0,1]* 2]
-        expected_result = pd.Series(data = np.array([2, 3, 6, 7, 10, 11, 14, 15, 18, 24]),
+        expected_index = [range(self.num_scen), [0,1]]
+        expected_result = pd.Series(data = np.array([2, 3, 6, 7, 10, 11, 14, 15, 18, 19], dtype= int),
                                index = pd.MultiIndex.from_product(expected_index, names = self.group_cols), 
                                name = "Output")
-        result = output_rate(self.df, self.output_cols)
-        self.assertListEqual(self.result.values, self.expected.values)
+        result = output_rate(self.df.groupby(by = self.group_cols), self.output_cols)
+        self.assertListEqual(result.to_list(), expected_result.to_list())
 
     def test_output_carbon_excess(self):
-        expected_index = [range(self.num_scen), [0,1]* 2]
+        expected_index = [range(self.num_scen), [0,1]]
         expected_result = pd.Series(data = np.array([0, 0,0, 0, 0, 2, 8, 10, 16, 18]),
                                index = pd.MultiIndex.from_product(expected_index, names = self.group_cols), 
                                name = "Output")
-        result = output_carbon_excess(self.df, self.output_cols, self.sec_asset_id,
+        result = output_carbon_excess(self.df.groupby(by = self.group_cols), self.output_cols, self.sec_asset_id,
                                     self.allowance, True, False)
-        self.assertListEqual(self.result.values, self.expected.values)                      
+        self.assertListEqual(result.to_list(), expected_result.to_list())                      
 
     def test_output_carbon_price(self):
-        expected_index = [range(self.num_scen), [0,1]* 2]
+        expected_index = [range(self.num_scen), [0,1]]
         expected_unit_cost = pd.Series(data = np.array([19, 18,15, 14, 11, 10, 7, 6, 3, 2]),
                                index = pd.MultiIndex.from_product(expected_index, names = self.group_cols), 
                                name = "Output")
@@ -60,19 +63,17 @@ class TestExample(unittest.TestCase):
         expected_excess = pd.Series(data = np.array([0, 0,0, 0, 0, 2, 8, 10, 16, 18]),
                                index = pd.MultiIndex.from_product(expected_index, names = self.group_cols), 
                                name = "Output")
-        expected_intensity = pd.Series(data = np.array([2, 3, 6, 7, 10, 11, 14, 15, 18, 24]),
+        expected_intensity = pd.Series(data = np.array([2, 3, 6, 7, 10, 11, 14, 15, 18, 19]),
                                index = pd.MultiIndex.from_product(expected_index, names = self.group_cols), 
                                name = "Output")
-        expected_result = pd.Series(data = np.array([0, 0,0, 0, 0,10*(2- 11), 13*(8/14), 14*(10/15), 17*(16/18), 18*(18/24)]),
+        expected_result = pd.Series(data = np.array([0, 0,0, 0, 0,10*(2/11), 13*(8/14), 14*(10/15), 17*(16/18), 18*(18/19)]),
                                index = pd.MultiIndex.from_product(expected_index, names = self.group_cols), 
                                name = "Output")
         
-        result = output_carbon_price(self.df, self.output_cols, self.sec_asset_id,
+        result = output_carbon_price(self.df.groupby(by = self.group_cols), self.output_cols, self.sec_asset_id,
                                      self.allowance, True, False, self.price)
-        self.assertListEqual(self.result.values, self.expected.values) 
-    #'''
-
-
+        self.assertListEqual(result.to_list(), expected_result.to_list()) 
+    
     @unittest.skip("Keep this as a template. TODO: DELETE THIS AFTER FELIX CREATED A NEW TEST")
     def test_gen_cohort(self):
         #Suppose my code generates a+b
@@ -94,4 +95,4 @@ class TestExample(unittest.TestCase):
 
 temp = TestExample()
 temp.setUp()
-print(temp.df)
+print(temp.test_output_carbon_price())
