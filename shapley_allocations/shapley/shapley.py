@@ -1,13 +1,21 @@
-from pathlib import Path
+from random import shuffle
 from typing import Callable
+
 import numpy as np
 import pandas as pd
-from random import shuffle
-from utils.utils import (
+
+from shapley_allocations.utils.utils import (
     char_order,
+    cluster_from_cat,
+    scen_file_list,
+    scen_import,
     shap_Phi,
+    split_indx,
     to_bool_list,
-    split_indx)
+)
+
+#from utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
+ #                                   to_bool_list, shap_Phi
 
 #################################
 #PREPROCESSING: TAILORED FOR THE SPECIFIC INPUT
@@ -45,7 +53,6 @@ def calc_col(df: pd.DataFrame, output_cols: list[str], player_id_col: str, group
 
     return(computed_df)
 
-
 def gen_cohort(num_cohorts: int, area_fname: str, gen_id_col: str) -> pd.Series:
     """Given the number of clusters desired, and a file name specifying
     each player, generates the clusters for testing the speed of shapley allocations
@@ -80,7 +87,7 @@ def gen_cohort(num_cohorts: int, area_fname: str, gen_id_col: str) -> pd.Series:
     pd.DataFrame(gen_zone_df["Cluster"]).to_csv("cohort.csv")
     return(gen_zone_df["Cluster"])
 
-def cluster_values(scen_em_df: pd.DataFrame, player_id_col: str,
+def gen_cluster_values(scen_em_df: pd.DataFrame, player_id_col: str,
                    cohorts_df: pd.Series, group_cols: list[str],
                    output_cols: list[str], group_fctn: list[Callable]) -> pd.DataFrame:
     """Given the dataframe with appropriate cols, the player id column,
@@ -126,8 +133,8 @@ def cluster_values(scen_em_df: pd.DataFrame, player_id_col: str,
     return(computed_df)
 
 def gen_cohort_payoff(group_cluster_df: pd.DataFrame, num_cohorts: int, 
-                      group_cols: list[str], output_cols: list[str], player_id_col: str, output_fctn: Callable,
-                      **kwargs) -> np.ndarray:
+                      group_cols: list[str], output_cols: list[str], player_id_col: str,
+                                                output_fctn: Callable, **kwargs) -> np.ndarray:
     """Given the raw dataframe with appropriate cols, the number of clusters, 
     the respective df containing the labels of the clusters, 
     the column name containing the IDs of the clusters,
@@ -180,9 +187,10 @@ def gen_cohort_payoff(group_cluster_df: pd.DataFrame, num_cohorts: int,
         char_cluster_df = group_cluster_df[group_cluster_df.index.get_level_values(len(group_cols)).
                                            isin(cluster_list[to_bool_list(char_labels[n])])]
         #Fill in the list with the outputs needed
-        char_values[n] = np.array(output_fctn(char_cluster_df.groupby(group_cols), output_cols, player_id_col,
-                              kwargs.get("allowance", None), kwargs.get("is_absolute", None), True,
-                              kwargs.get("price_df", None)).values)
+        char_values[n] = np.array(output_fctn(char_cluster_df.groupby(group_cols), output_cols,
+                                            player_id_col, kwargs.get("allowance", None),
+                                            kwargs.get("is_absolute", None), True,
+                                            kwargs.get("price_df", None)).values)
     #The characterist function of the empty cluster is always 0
     char_values[(2**num_cohorts) - 1] = np.zeros(np.shape(char_values[0]))
     #Combine all the arrays in list into a matrix
@@ -191,7 +199,7 @@ def gen_cohort_payoff(group_cluster_df: pd.DataFrame, num_cohorts: int,
 #################################
 #ANALAYSIS - STAYS THE SAME FOR ALL INPUTS
 #################################
-def tail_sims(alpha: float, scen_df: pd.Series, grp_by_col: list[str]) -> list:
+def find_simulation_tail(alpha: float, scen_df: pd.Series, grp_by_col: list[str]) -> list:
     """Given the alpha used to compute the CVar, the scenario data series 
     with the outputs to compute the cvar from,
     outputs the tail scenarios 
@@ -219,8 +227,7 @@ def tail_sims(alpha: float, scen_df: pd.Series, grp_by_col: list[str]) -> list:
     #return hour and their corresponding scenarios
     return(scen_df.loc[scen_df > var_df].index.to_list())
 
-
-def shap(char_mat: np.ndarray, num_cohorts: int) -> np.ndarray:
+def calc_shapley_value(char_mat: np.ndarray, num_cohorts: int) -> np.ndarray:
     """Given the characteristic matrix and the number of cohorts,
     compute the shapley
     
@@ -239,7 +246,7 @@ def shap(char_mat: np.ndarray, num_cohorts: int) -> np.ndarray:
     """
     return(np.matmul(char_mat, shap_Phi(num_cohorts)))
 
-def var_shap(alloc_array: np.ndarray, tail_scen: list, 
+def calc_empirical_var(alloc_array: np.ndarray, tail_scen: list, 
              group_cols: list[str], num_tail_scen: int) -> pd.DataFrame:
     """Given the allocation matrix for all the different indices, and the name of the index,
      and number of tail event, compute the empirical var
@@ -265,28 +272,46 @@ def var_shap(alloc_array: np.ndarray, tail_scen: list,
     alloc_df = alloc_df.groupby(level = len(group_cols)-1).sum() / num_tail_scen
     return(alloc_df.sort_index())
 
+def calc_shapley_var(folder_path: str, output_cols: list[str], group_cols: list[str],
+                     sec_asset_id: str, alpha: float, output: callable,
+                     cluster_fname: str, num_cohorts: int, area_fname: str, asset_id: str,
+                     num_scen: int, output_file: str, **kwargs):
 
-'''
-[file_list, num_files] = scen_file_list("/Users/felix/Github/shapley/tests/scenarios")
-em_df = scen_import(file_list, ["Hour", "Generator", "CO2 Emissions metric ton", "Dispatch"], [5,9])
-scen_df = calc_col(em_df, ["CO2 Emissions metric ton", "Dispatch"], ["Scenario", "Hour"], 
-             output_emission_rate)
+    #Obtain the path of all the files
+    files_list, num_files = scen_file_list(folder_path)
+    #FIle size is not too large so read all of it at once and leave it in memory stack
+    scen_em_df = scen_import(files_list,output_cols + [group_cols[1]] + [sec_asset_id], [5,9])
 
-tail_scen = tail_sims(0.05, scen_df, ["Scenario", "Hour"])
-#In order to locate the worst scenarios, we filter through the indices
-em_df.set_index( ["Scenario", "Hour"], inplace= True)
+    #If there are optional arguments, list them here
+    #a = kwargs.get("allowance", None)
 
-#Filter for only the tail scenarios
-em_df = em_df.loc[tail_scen,:]
-#
-cohort_df = gen_cohort(2, "/Users/felix/Github/shapley/texas7k_2020_gen_to_zone.csv",
-                       "GEN UID")
+    #Obtain the worst alpha% of scenario instances for each hour
+    #This provides a list of all the worst instances
+    tail_scen = find_simulation_tail(alpha, calc_col(scen_em_df, output_cols, sec_asset_id,
+                                                group_cols, output, **kwargs), group_cols)
+    #In order to locate the worst scenarios, we filter through the indices
+    scen_em_df.set_index(group_cols, inplace= True)
 
-group_cluster_df = cluster_values(em_df, "Generator", cohort_df, ["Scenario", "Hour"],
-                                  ["CO2 Emissions metric ton", "Dispatch"])
-char_matrix = gen_cohort_payoff(group_cluster_df, 2, ["Scenario", "Hour"],["CO2 Emissions metric ton", "Dispatch"],
-                           output_emission_rate)
-alloc_df = shap(char_matrix, 2)
-result = var_shap(alloc_df, tail_scen, ["Scenario", "Hour"], np.ceil(0.05*5))
+    #Filter for only the tail scenarios
+    scen_em_df = scen_em_df.loc[tail_scen,:]
 
-'''
+    if (cluster_fname):
+        #If cluster file provided
+        cohort_df = cluster_from_cat(pd.read_csv(cluster_fname,
+                                                 header = 0, index_col = 0))
+    else:
+        #Generate my own cohorts
+        cohort_df = gen_cohort(num_cohorts, area_fname, asset_id)
+        
+    group_cluster_df = gen_cluster_values(scen_em_df, sec_asset_id, cohort_df, group_cols,
+                                  output_cols, ["sum"] * len(output_cols))
+    del scen_em_df
+    
+    char_matrix = gen_cohort_payoff(group_cluster_df, num_cohorts, 
+                                    group_cols, output_cols, sec_asset_id, output, **kwargs)
+    #Append the grand coalition characteristic to the final column
+    result = calc_empirical_var(np.append(calc_shapley_value(char_matrix, num_cohorts), 
+                                char_matrix[:,0].reshape(len(tail_scen),1), axis = 1),
+                      tail_scen, group_cols, np.ceil(alpha*num_scen))
+    pd.DataFrame(round(result,3)).to_csv(output_file, header = ["Coalition " + str(i) \
+                                            for i in range(num_cohorts)] + ["Total Allocation"])

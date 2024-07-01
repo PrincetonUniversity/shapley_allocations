@@ -2,6 +2,7 @@ __pycache__/
 __scrap__/
 .DS_Store
 .vscode/
+build/
 2018-08-01/
 Pipfile
 Pipfile.lock
@@ -10,3 +11,4 @@ cohort.txt
 results.csv
 result.csv
 cohort.csv
+tests/
