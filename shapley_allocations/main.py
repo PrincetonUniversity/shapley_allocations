@@ -1,12 +1,16 @@
 import argparse
 import time
 from datetime import timedelta
-import pandas as pd
-import numpy as np
-from random import seed
 
+import pandas as pd
+
+from shapley_allocations.shapley.char_funcs import (
+    output_carbon_excess,
+    output_carbon_price,
+    output_rate,
+)
 from shapley_allocations.shapley.shapley import calc_shapley_var
-from shapley_allocations.shapley.char_funcs import output_rate, output_carbon_excess, output_carbon_price
+
 #from shapley.shapley import calc_shapley_var
 #from shapley.char_funcs import output_rate, output_carbon_excess, output_carbon_price
 
@@ -34,8 +38,10 @@ if __name__=="__main__":
     parser.add_argument("--num_cohorts", type=int, help="Number of cohorts.")
     parser.add_argument("--alpha", type=float, help="1-quantile.", default=0.05)
     parser.add_argument("--num_scen", type=int, help="Number of scenarios.", default=500)
-    parser.add_argument("--group_cols", type=str, help="Index columns to be used, separated by ,", default="Scenario,Hour")
-    parser.add_argument("--output_cols", type=str, help="The numeric data to be used, separatred by ,", 
+    parser.add_argument("--group_cols", type=str, help="Index columns to be used, separated by ,",
+                        default="Scenario,Hour")
+    parser.add_argument("--output_cols", type=str, help="The numeric data to be used, "
+                        "separatred by ,", 
                         default="CO2 Emissions metric ton,Dispatch,Unit Cost")
     parser.add_argument("--asset_id", type=str, help="In the file used for cohorting, "
                         "unique id of asset", default="GEN UID")
@@ -46,10 +52,16 @@ if __name__=="__main__":
     parser.add_argument("--char_func", type=str, help="Characteristic function that is used to "
                         "calculate the each coalition's characteristic value",
                         choices=POSSIBLE_CHAR_FUNCS)
-    parser.add_argument("--allowance", type=float, help="Carbone allowence for each generator. This value is used only if char_func is carbon_excess or carbon_price.", default=50.)
-    parser.add_argument("--is_absolute", dest="is_absolute", action="store_true", help="Whether the carbon allownce is relative (default) or absolute (if this is passed). This value is used only if char_func is carbon_excess or carbon_price.")
+    parser.add_argument("--allowance", type=float, help="Carbone allowence for each generator. "
+                        "This value is used only if char_func is carbon_excess or carbon_price.",
+                        default=50.)
+    parser.add_argument("--is_absolute", dest="is_absolute", action="store_true",
+                        help="Whether the carbon allownce is relative (default) or absolute "
+                        "(if this is passed). This value is used only if char_func is "
+                        "carbon_excess or carbon_price.")
     parser.set_defaults(is_absolute=False)
-    parser.add_argument("--price_fname", type=str, help="Path to a .csv file containing the LMP prices. This value is used only if char_func is carbon_price.", default="")
+    parser.add_argument("--price_fname", type=str, help="Path to a .csv file containing the LMP "
+                        "prices. This is used only if char_func is carbon_price.", default="")
     
     args = parser.parse_args()
 
@@ -72,9 +84,9 @@ if __name__=="__main__":
 
     calc_shapley_var(folder_path=folder_path, output_cols=output_cols, group_cols=group_cols,
                      sec_asset_id=sec_asset_id, alpha=alpha, output=char_func,
-                     cluster_fname=cluster_fname, num_cohorts=num_cohorts, area_fname=area_fname, asset_id=asset_id,
-                     num_scen=num_scen, output_file=output_file, allowance=allowance,
-                     is_absolute=is_absolute, price=price)
+                     cluster_fname=cluster_fname, num_cohorts=num_cohorts, area_fname=area_fname,
+                     asset_id=asset_id, num_scen=num_scen, output_file=output_file,
+                     allowance=allowance, is_absolute=is_absolute, price=price)
 
     duration = timedelta(seconds=time.perf_counter()-starttime)
     print('Job took: ', duration)

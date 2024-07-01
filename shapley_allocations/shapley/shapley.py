@@ -1,10 +1,19 @@
-from pathlib import Path
+from random import shuffle
 from typing import Callable
+
 import numpy as np
 import pandas as pd
-from random import shuffle
-from shapley_allocations.utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
-                                    to_bool_list, shap_Phi
+
+from shapley_allocations.utils.utils import (
+    char_order,
+    cluster_from_cat,
+    scen_file_list,
+    scen_import,
+    shap_Phi,
+    split_indx,
+    to_bool_list,
+)
+
 #from utils.utils import cluster_from_cat, scen_file_list, scen_import, split_indx, char_order, \
  #                                   to_bool_list, shap_Phi
 
@@ -124,8 +133,8 @@ def gen_cluster_values(scen_em_df: pd.DataFrame, player_id_col: str,
     return(computed_df)
 
 def gen_cohort_payoff(group_cluster_df: pd.DataFrame, num_cohorts: int, 
-                      group_cols: list[str], output_cols: list[str], player_id_col: str, output_fctn: Callable,
-                      **kwargs) -> np.ndarray:
+                      group_cols: list[str], output_cols: list[str], player_id_col: str,
+                                                output_fctn: Callable, **kwargs) -> np.ndarray:
     """Given the raw dataframe with appropriate cols, the number of clusters, 
     the respective df containing the labels of the clusters, 
     the column name containing the IDs of the clusters,
@@ -178,9 +187,10 @@ def gen_cohort_payoff(group_cluster_df: pd.DataFrame, num_cohorts: int,
         char_cluster_df = group_cluster_df[group_cluster_df.index.get_level_values(len(group_cols)).
                                            isin(cluster_list[to_bool_list(char_labels[n])])]
         #Fill in the list with the outputs needed
-        char_values[n] = np.array(output_fctn(char_cluster_df.groupby(group_cols), output_cols, player_id_col,
-                              kwargs.get("allowance", None), kwargs.get("is_absolute", None), True,
-                              kwargs.get("price_df", None)).values)
+        char_values[n] = np.array(output_fctn(char_cluster_df.groupby(group_cols), output_cols,
+                                            player_id_col, kwargs.get("allowance", None),
+                                            kwargs.get("is_absolute", None), True,
+                                            kwargs.get("price_df", None)).values)
     #The characterist function of the empty cluster is always 0
     char_values[(2**num_cohorts) - 1] = np.zeros(np.shape(char_values[0]))
     #Combine all the arrays in list into a matrix
@@ -277,8 +287,8 @@ def calc_shapley_var(folder_path: str, output_cols: list[str], group_cols: list[
 
     #Obtain the worst alpha% of scenario instances for each hour
     #This provides a list of all the worst instances
-    tail_scen = find_simulation_tail(alpha, calc_col(scen_em_df, output_cols, sec_asset_id, group_cols, 
-                                          output, **kwargs), group_cols)
+    tail_scen = find_simulation_tail(alpha, calc_col(scen_em_df, output_cols, sec_asset_id,
+                                                group_cols, output, **kwargs), group_cols)
     #In order to locate the worst scenarios, we filter through the indices
     scen_em_df.set_index(group_cols, inplace= True)
 
@@ -303,4 +313,5 @@ def calc_shapley_var(folder_path: str, output_cols: list[str], group_cols: list[
     result = calc_empirical_var(np.append(calc_shapley_value(char_matrix, num_cohorts), 
                                 char_matrix[:,0].reshape(len(tail_scen),1), axis = 1),
                       tail_scen, group_cols, np.ceil(alpha*num_scen))
-    pd.DataFrame(round(result,3)).to_csv(output_file, header = ["Coalition " + str(i) for i in range(num_cohorts)] + ["Total Allocation"])
+    pd.DataFrame(round(result,3)).to_csv(output_file, header = ["Coalition " + str(i) \
+                                            for i in range(num_cohorts)] + ["Total Allocation"])

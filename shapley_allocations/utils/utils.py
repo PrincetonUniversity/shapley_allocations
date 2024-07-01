@@ -1,5 +1,6 @@
 import math
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -242,19 +243,9 @@ def scen_import(f_list: list, cols: list[str],suffix_char: list[int]) -> pd.Data
         dataframe holding all the csv in the file list
     """
     #Read all into a csv
-    em_df = (pd.read_csv(f, sep = ",", usecols = cols,
-                        header = 0).assign(Scenario = f.name[slice(suffix_char[0],suffix_char[1], 1)]) 
-                        for f in f_list)
+    em_df = (pd.read_csv(f, sep = ",", usecols = cols, header = 0).assign(Scenario = \
+                            f.name[slice(suffix_char[0],suffix_char[1], 1)]) for f in f_list)
     #Concat into a dataframe from a generator class
     #return(em_df)
     return(pd.concat(em_df, ignore_index=True))
-'''
-[file_list, num_files] = scen_file_list("/Users/felix/Github/shapley/tests/scenarios")
-em_df = scen_import(file_list, ["Hour", "Generator", "CO2 Emissions metric ton", "Dispatch", "Unit Cost"], [5,9])
-#em_df.set_index(["Scenario", "Hour"], inplace= True)
-price_df = pd.Series(data = [60] * 24, name = "Price")
-rate_df = output_carbon_price(em_df.groupby(["Scenario", "Hour"]), 
-                               ["CO2 Emissions metric ton", "Dispatch", "Unit Cost"], 
-                               50, True, price_df)
-print(rate_df)
-'''
+
